@@ -16,6 +16,7 @@ import {
 } from "jalaali-js";
 import * as XLSX from "xlsx";
 import { createClient } from "@/lib/supabase/client";
+import { getErrorMessage } from "@/lib/errors";
 import {
   parseAmount,
   parseJalaliTextToGregorianISO,
@@ -896,6 +897,47 @@ export default function PoliciesPage() {
     setSaving(true);
 
     try {
+      const previousPolicy = editingId
+        ? policies.find((item) => item.id === editingId)
+        : undefined;
+
+      const newInstallmentCount =
+        form.paymentType === "اقساطی" ? installmentCount : 0;
+      const newFirstInstallment =
+        form.paymentType === "اقساطی"
+          ? normalizeDate(form.firstInstallmentDate)
+          : "";
+
+      // Everything that feeds the payment schedule.
+      const scheduleChanged =
+        !previousPolicy ||
+        previousPolicy.amount !== policyAmount ||
+        previousPolicy.paymentType !== form.paymentType ||
+        previousPolicy.cashAmount !== finalCashAmount ||
+        previousPolicy.installmentCount !== newInstallmentCount ||
+        previousPolicy.firstInstallmentDate !== newFirstInstallment ||
+        previousPolicy.issueDate !== normalizeDate(form.issueDate);
+
+      // transaction_allocations reference payment_schedule rows, so the
+      // schedule cannot be rebuilt once payments exist. Stop BEFORE anything
+      // is written, otherwise the policy row would be updated and the
+      // schedule left unchanged.
+      if (editingId && scheduleChanged) {
+        const { count, error: countError } = await supabase
+          .from("transactions")
+          .select("id", { count: "exact", head: true })
+          .eq("policy_id", editingId);
+
+        if (countError) throw countError;
+
+        if ((count ?? 0) > 0) {
+          setError(
+            "برای این بیمه‌نامه تراکنش ثبت شده است؛ مبلغ، نحوه پرداخت، اقساط و تاریخ صدور آن قابل تغییر نیست. سایر اطلاعات را می‌توانید ویرایش کنید.",
+          );
+          return;
+        }
+      }
+
       let customerId = form.customerId;
 
       const customerPayload = {
@@ -976,6 +1018,7 @@ export default function PoliciesPage() {
         throw new Error("شناسه بیمه‌نامه ذخیره‌شده دریافت نشد.");
       }
 
+      if (!editingId || scheduleChanged) {
       // Preserve paid installments when editing if their amount and date match.
       const oldPolicy = editingId
         ? policies.find((item) => item.id === editingId)
@@ -1032,16 +1075,14 @@ export default function PoliciesPage() {
         );
       }
 
+      }
+
       await loadData();
       setPanelOpen(false);
       setEditingId(null);
       setForm({ ...emptyForm });
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "ذخیره بیمه‌نامه با خطا مواجه شد.",
-      );
+      setError(getErrorMessage(cause, "ذخیره بیمه‌نامه با خطا مواجه شد."));
     } finally {
       setSaving(false);
     }

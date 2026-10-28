@@ -21,6 +21,7 @@ type Policy = {
 
 type Allocation = {
   allocated_amount: number | string;
+  transactions: Relation<{ transaction_type: string }>;
 };
 
 type PaymentSchedule = {
@@ -52,6 +53,17 @@ type RenewalFollowupRecord = {
   policy_id: string;
   status: RenewalFollowupStatus;
 };
+
+function signedAllocation(item: Allocation): number {
+  const amount = Number(item.allocated_amount) || 0;
+  const transaction = Array.isArray(item.transactions)
+    ? item.transactions[0]
+    : item.transactions;
+
+  // Allocations of reversal transactions are stored as positive numbers
+  // and must be subtracted (same rule as the accounting page).
+  return transaction?.transaction_type === "reversal" ? -amount : amount;
+}
 
 function getRelation<T>(value: Relation<T>): T | null {
   return Array.isArray(value) ? value[0] ?? null : value;
@@ -150,7 +162,10 @@ export default async function FollowUpPage() {
         )
       ),
       transaction_allocations (
-        allocated_amount
+        allocated_amount,
+        transactions (
+          transaction_type
+        )
       )
     `)
     .gte("due_date", today)
@@ -244,7 +259,7 @@ const renewalPolicies = renewalPoliciesBase
 
       const amountDue = Number(schedule.amount_due) || 0;
       const allocated = (schedule.transaction_allocations ?? []).reduce(
-        (sum, item) => sum + (Number(item.allocated_amount) || 0),
+        (sum, item) => sum + signedAllocation(item),
         0,
       );
 

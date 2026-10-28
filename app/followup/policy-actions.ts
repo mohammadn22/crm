@@ -1,4 +1,3 @@
-
 "use server";
 
 import { createClient } from "@/lib/supabase-server";
@@ -30,8 +29,11 @@ export async function savePolicyFollowup(
 
   if (error) {
     console.error("Policy follow-up update error:", error);
-    throw new Error("خطا در ذخیره وضعیت پیگیری تمدید.");
+    return {
+      success: false as const,
+      error: "خطا در ذخیره وضعیت پیگیری تمدید.",
+    };
   }
 
-  return { success: true };
+  return { success: true as const };
 }

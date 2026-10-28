@@ -6,6 +6,7 @@ import type { FormEvent } from "react";
 import AppShell from "../components/AppShell";
 import Button from "../components/Button";
 import { createClient } from "@/lib/supabase/client";
+import { getErrorMessage } from "@/lib/errors";
 import {
   getTodayJalali,
   jalaliTextToISO,
@@ -588,9 +589,7 @@ export default function AccountingPage() {
       console.error("Failed to record transaction:", error);
 
       setTransactionError(
-        error instanceof Error
-          ? error.message
-          : "ثبت تراکنش ناموفق بود. دوباره تلاش کنید.",
+        getErrorMessage(error, "ثبت تراکنش ناموفق بود. دوباره تلاش کنید."),
       );
     } finally {
       setSavingTransaction(false);

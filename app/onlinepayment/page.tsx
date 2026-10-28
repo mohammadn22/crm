@@ -3,6 +3,7 @@
 
 import AppShell from "../components/AppShell";
 import { createClient } from "@/lib/supabase/client";
+import { getErrorMessage } from "@/lib/errors";
 import { parseJalaliTextToGregorianISO } from "@/lib/date-utils";
 import * as XLSX from "xlsx";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -469,23 +470,6 @@ if (!paymentDate) {
 
 
 try {
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  console.log("Current user:", user?.id);
-  console.log("Auth error:", authError);
-
-  const { data: sessionData } = await supabase.auth.getSession();
-
-  console.log("Session user:", sessionData.session?.user.id);
-  console.log("Session role:", sessionData.session?.user.role);
-  console.log(
-    "Access token present:",
-    Boolean(sessionData.session?.access_token)
-  );
-
   const { error: rpcError } = await supabase.rpc(
     "complete_online_payment_import",
     {
@@ -495,12 +479,7 @@ try {
   );
 
 if (rpcError) {
-  console.error("RPC error message:", rpcError.message);
-  console.error("RPC error code:", rpcError.code);
-  console.error("RPC error details:", rpcError.details);
-  console.error("RPC error hint:", rpcError.hint);
-  console.error("RPC error object:", JSON.stringify(rpcError, null, 2));
-
+  console.error("complete_online_payment_import failed:", rpcError);
   throw rpcError;
 }
 
@@ -508,11 +487,7 @@ if (rpcError) {
   await loadRows();
 } catch (cause) {
 
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "ثبت پرداخت ناموفق بود."
-      );
+      setError(getErrorMessage(cause, "ثبت پرداخت ناموفق بود."));
     } finally {
       setSavingId(null);
     }
