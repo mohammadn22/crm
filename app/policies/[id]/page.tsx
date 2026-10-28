@@ -450,13 +450,29 @@ export default function PolicyDetailsPage() {
     <AppShell>
       <main
         dir="rtl"
-        className="min-h-screen bg-[#F6F7FC] p-4 text-slate-800 md:p-8"
+        className="min-h-screen bg-[#F6F7FC] p-4 text-slate-800 md:p-8 print:min-h-0 print:bg-white print:p-0"
       >
+        <style>{`
+  @media print {
+    @page { size: A4 landscape; margin: 12mm; }
+    * {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      color: #000 !important;
+      background: transparent !important;
+      border-color: #999 !important;
+      box-shadow: none !important;
+    }
+    thead th { background: #eee !important; }
+    tr { break-inside: avoid; }
+    thead { display: table-header-group; }
+  }
+`}</style>
         <div className="mx-auto max-w-6xl space-y-6">
           <button
             type="button"
             onClick={() => router.push("/policies")}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-slate-50"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-slate-50 print:hidden"
           >
             ← بازگشت به فهرست بیمه‌نامه‌ها
           </button>
@@ -501,14 +517,29 @@ export default function PolicyDetailsPage() {
 
                   <button
                     type="button"
-                    onClick={() => router.push("/policies")}
-                    className="rounded-xl bg-[#001427] px-4 py-3 text-sm font-bold text-white hover:bg-[#17354a]"
+                    onClick={() => window.print()}
+                    className="flex items-center gap-2 rounded-xl bg-[#001427] px-4 py-3 text-sm font-bold text-white hover:bg-[#17354a] print:hidden"
                   >
-                    بازگشت به مدیریت
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M6 9V3h12v6" />
+                      <rect x="6" y="14" width="12" height="7" rx="1" />
+                      <path d="M6 17H4a1 1 0 0 1-1-1v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a1 1 0 0 1-1 1h-2" />
+                    </svg>
+                    چاپ
                   </button>
                 </div>
 
-                <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 print:hidden">
                   {[
                     ["تاریخ صدور", policy.issue_date],
                     ["تاریخ شروع", policy.start_date],
@@ -530,7 +561,7 @@ export default function PolicyDetailsPage() {
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-[#e7ece9] bg-white p-5 shadow-sm md:p-7">
+              <section className="rounded-2xl border border-[#e7ece9] bg-white p-5 shadow-sm md:p-7 print:hidden">
                 <h2 className="text-lg font-extrabold">اطلاعات بیمه‌گذار</h2>
 
                 {customer ? (
@@ -556,7 +587,7 @@ export default function PolicyDetailsPage() {
                 )}
               </section>
 
-              <section className="rounded-2xl border border-[#e7ece9] bg-white p-5 shadow-sm md:p-7">
+              <section className="rounded-2xl border border-[#e7ece9] bg-white p-5 shadow-sm md:p-7 print:hidden">
                 <h2 className="text-lg font-extrabold">خلاصه وضعیت مالی</h2>
 
                 <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -593,13 +624,13 @@ export default function PolicyDetailsPage() {
               <section className="overflow-hidden rounded-2xl border border-[#e7ece9] bg-white shadow-sm">
                 <div className="border-b border-[#edf0ee] p-5 md:p-7">
                   <h2 className="text-lg font-extrabold">جزئیات اقساط</h2>
-                  <p className="mt-2 text-sm text-slate-500">
+                  <p className="mt-2 text-sm text-slate-500 print:hidden">
                     وضعیت اقساط بر اساس تراکنش‌های ثبت‌شده و مبالغ تخصیص‌یافته
                     محاسبه می‌شود.
                   </p>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto print:overflow-visible">
                   <table className="w-full min-w-[760px] text-right text-sm">
                     <thead className="bg-[#f7f9f8] text-xs text-slate-500">
                       <tr>
@@ -674,22 +705,22 @@ export default function PolicyDetailsPage() {
               <section className="overflow-hidden rounded-2xl border border-[#e7ece9] bg-white shadow-sm">
                 <div className="border-b border-[#edf0ee] p-5 md:p-7">
                   <h2 className="text-lg font-extrabold">جزئیات پرداخت‌ها</h2>
-                  <p className="mt-2 text-sm text-slate-500">
+                  <p className="mt-2 text-sm text-slate-500 print:hidden">
                     فهرست تراکنش‌های واقعی ثبت‌شده برای این بیمه‌نامه.
                   </p>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto print:overflow-visible">
                   <table className="w-full min-w-[900px] text-right text-sm">
                     <thead className="bg-[#f7f9f8] text-xs text-slate-500">
                       <tr>
-                        <th className="px-5 py-4">ردیف</th>
+                        <th className="px-5 py-4 ">ردیف</th>
                         <th className="px-5 py-4">تاریخ</th>
                         <th className="px-5 py-4">نوع تراکنش</th>
                         <th className="px-5 py-4">روش پرداخت</th>
                         <th className="px-5 py-4">مبلغ (تومان)</th>
                         <th className="px-5 py-4">شرح</th>
-                        <th className="px-5 py-4">عملیات</th>
+                        <th className="px-5 py-4 print:hidden">عملیات</th>
                       </tr>
                     </thead>
 
@@ -750,7 +781,7 @@ export default function PolicyDetailsPage() {
                                 <button
                                   type="button"
                                   onClick={() => openEdit(transaction)}
-                                  className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold hover:bg-slate-100"
+                                  className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold hover:bg-slate-100 print:hidden"
                                 >
                                   ویرایش
                                 </button>
@@ -770,7 +801,7 @@ export default function PolicyDetailsPage() {
                 </div>
               </section>
 
-              <section className="rounded-2xl border border-[#e7ece9] bg-white p-5 shadow-sm md:p-7">
+              <section className="rounded-2xl border border-[#e7ece9] bg-white p-5 shadow-sm md:p-7 print:hidden">
                 <h2 className="text-lg font-extrabold">ثبت تراکنش جدید</h2>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   مبلغ واردشده طبق ترتیب سررسید به اقساط دارای مانده تخصیص
@@ -935,7 +966,7 @@ export default function PolicyDetailsPage() {
 
         {editing && (
           <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 print:hidden"
             onMouseDown={(event) => {
               if (event.target === event.currentTarget && !editSaving) {
                 setEditing(null);
@@ -946,7 +977,7 @@ export default function PolicyDetailsPage() {
               onSubmit={submitEdit}
               className="w-full max-w-lg space-y-4 rounded-2xl bg-white p-6 shadow-xl"
             >
-              <h2 className="text-lg font-extrabold">
+              <h2 className="text-lg font-extrabold print:hidden">
                 ویرایش {transactionTypeLabel(editing.transaction_type)}
               </h2>
               <p className="text-xs leading-6 text-slate-500">

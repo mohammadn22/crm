@@ -62,6 +62,7 @@ type Policy = {
   installmentCount: number;
   firstInstallmentDate: string;
   installments: Installment[];
+  createdAt: string;
 };
 
 type CustomerRow = {
@@ -131,6 +132,23 @@ const emptyForm = {
 };
 
 const IMPORT_POLICY_TYPE = "بیمه شخص ثالث خودرو";
+
+const PAGE_SIZE = 10;
+
+function getPageNumbers(current: number, total: number): (number | "…")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+
+  const pages: (number | "…")[] = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+
+  if (start > 2) pages.push("…");
+  for (let p = start; p <= end; p++) pages.push(p);
+  if (end < total - 1) pages.push("…");
+  pages.push(total);
+
+  return pages;
+}
 
 function digits(value: string) {
   return value
@@ -472,7 +490,7 @@ export default function PoliciesPage() {
   const [pageError, setPageError] = useState("");
 
   const [query, setQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"type" | "number">("number");
+  const [sortBy, setSortBy] = useState<"recent" | "type" | "number">("recent");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -625,6 +643,7 @@ export default function PoliciesPage() {
             date: normalizeDate(item.due_date ?? ""),
             paid: Boolean(item.paid),
           })),
+          createdAt: row.created_at ?? "",
         };
       });
 
@@ -667,16 +686,51 @@ export default function PoliciesPage() {
         );
       })
       .sort((a, b) => {
-        const comparison =
-          sortBy === "type"
-            ? a.type.localeCompare(b.type, "fa")
-            : a.policyNumber.localeCompare(b.policyNumber, "fa", {
-                numeric: true,
-              });
+        let comparison: number;
+
+        if (sortBy === "recent") {
+          // Newest registered first (with "desc"); issue date breaks ties.
+          comparison =
+            a.createdAt.localeCompare(b.createdAt) ||
+            dateKey(a.issueDate).localeCompare(dateKey(b.issueDate));
+        } else if (sortBy === "type") {
+          comparison = a.type.localeCompare(b.type, "fa");
+        } else {
+          comparison = a.policyNumber.localeCompare(b.policyNumber, "fa", {
+            numeric: true,
+          });
+        }
 
         return sortOrder === "asc" ? comparison : -comparison;
       });
   }, [policies, query, sortBy, sortOrder, fromDate, toDate]);
+
+  // Pagination. The page resets to 1 whenever a filter or sort changes
+  // (the stored page is tied to the filter key it was chosen under).
+  const filterKey = [query, sortBy, sortOrder, fromDate, toDate].join("|");
+  const [pageState, setPageState] = useState({ key: "", page: 1 });
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredPolicies.length / PAGE_SIZE),
+  );
+  const currentPage = Math.min(
+    pageState.key === filterKey ? pageState.page : 1,
+    totalPages,
+  );
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+
+  const paginatedPolicies = useMemo(
+    () => filteredPolicies.slice(pageStart, pageStart + PAGE_SIZE),
+    [filteredPolicies, pageStart],
+  );
+
+  function goToPage(page: number) {
+    setPageState({
+      key: filterKey,
+      page: Math.min(Math.max(1, page), totalPages),
+    });
+  }
 
   function openNewPolicy() {
     setEditingId(null);
@@ -1494,10 +1548,13 @@ if (!file) {
                 <select
                   value={sortBy}
                   onChange={(event) =>
-                    setSortBy(event.target.value as "type" | "number")
+                    setSortBy(
+                      event.target.value as "recent" | "type" | "number",
+                    )
                   }
                   className="h-11 w-full rounded-xl border border-[#dfe6e2] bg-white px-3 text-sm outline-none focus:border-[#708d81]"
                 >
+                  <option value="recent">جدیدترین</option>
                   <option value="number">شماره بیمه‌نامه</option>
                   <option value="type">نوع بیمه‌نامه</option>
                 </select>
@@ -1563,7 +1620,7 @@ if (!file) {
                 type="button"
                 onClick={() => {
                   setQuery("");
-                  setSortBy("number");
+                  setSortBy("recent");
                   setSortOrder("desc");
                   setFromDate("");
                   setToDate("");
@@ -1598,7 +1655,7 @@ if (!file) {
                 </thead>
 
                 <tbody className="divide-y divide-[#edf0ee]">
-                  {filteredPolicies.map((policy) => (
+                  {paginatedPolicies.map((policy) => (
                     <tr
                       key={policy.id}
                       className="transition hover:bg-[#fbfcfb]"
@@ -1656,6 +1713,66 @@ if (!file) {
                 </div>
               )}
             </div>
+
+            {!loading && filteredPolicies.length > PAGE_SIZE && (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[#edf0ee] px-5 py-4">
+                <p className="text-xs text-slate-500">
+                  نمایش {formatMoney(pageStart + 1)} تا{" "}
+                  {formatMoney(
+                    Math.min(pageStart + PAGE_SIZE, filteredPolicies.length),
+                  )}{" "}
+                  از {formatMoney(filteredPolicies.length)} بیمه‌نامه
+                </p>
+
+                <nav
+                  className="flex flex-wrap items-center gap-1"
+                  aria-label="صفحه‌بندی"
+                >
+                  <button
+                    type="button"
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="rounded-lg px-3 py-2 text-xs font-bold text-[#557766] transition hover:bg-[#edf3ef] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+                  >
+                    قبلی
+                  </button>
+
+                  {getPageNumbers(currentPage, totalPages).map((item, index) =>
+                    item === "…" ? (
+                      <span
+                        key={`gap-${index}`}
+                        className="px-2 text-xs text-slate-400"
+                      >
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => goToPage(item)}
+                        aria-current={item === currentPage ? "page" : undefined}
+                        className={`min-w-[34px] rounded-lg px-2.5 py-2 text-xs font-bold transition ${
+                          item === currentPage
+                            ? "bg-[#001427] text-white"
+                            : "text-slate-600 hover:bg-[#edf3ef]"
+                        }`}
+                      >
+                        {formatMoney(item)}
+                      </button>
+                    ),
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="rounded-lg px-3 py-2 text-xs font-bold text-[#557766] transition hover:bg-[#edf3ef] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+                  >
+                    بعدی
+                  </button>
+                </nav>
+              </div>
+            )}
           </section>
         </div>
 

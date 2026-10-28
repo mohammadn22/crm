@@ -16,10 +16,12 @@ export default function AppShell({
       dir="rtl"
       className="flex min-h-screen bg-[#F6F7FC] text-slate-800"
     >
-      <Sidebar
-        collapsed={collapsed}
-        onToggle={() => setCollapsed((previous) => !previous)}
-      />
+      <div className="contents print:hidden">
+    <Sidebar
+      collapsed={collapsed}
+      onToggle={() => setCollapsed((previous) => !previous)}
+    />
+  </div>
 
       <main className="min-w-0 flex-1">
         {children}
