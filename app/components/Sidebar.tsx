@@ -17,6 +17,7 @@ const navigation = [
   { label: "حسابداری", href: "/accounting", icon: "accounting" },
   { label: "پیگیری", href: "/followup", icon: "followup" },
   { label: "پرداخت آنلاین", href: "/onlinepayment", icon: "cloud" },
+  { label: "ارسال پیامک", href: "/sms", icon: "sms" },
 ];
 
 function Icon({
