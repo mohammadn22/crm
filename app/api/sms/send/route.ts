@@ -1,5 +1,7 @@
+
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase-server";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 function normalizeIranianMobile(value: string): string | null {
   let phone = value.replace(/[\s()-]/g, "");
@@ -57,11 +59,22 @@ export async function POST(request: Request) {
       );
     }
 
-    const apiKey = process.env.TEXTBEE_API_KEY;
+    // Local development: read from .env.local
+    // Production: read from Cloudflare Worker Secret
+    let apiKey: string | undefined;
+
+    if (process.env.NODE_ENV === "development") {
+      apiKey = process.env.TEXTBEE_API_KEY;
+    } else {
+      const { env } = getCloudflareContext();
+      apiKey = (env as { TEXTBEE_API_KEY?: string }).TEXTBEE_API_KEY;
+    }
 
     if (!apiKey) {
+      console.error("TEXTBEE_API_KEY is not configured.");
+
       return NextResponse.json(
-        { error: "کلید API پیامک تنظیم نشده است..." },
+        { error: "کلید API پیامک تنظیم نشده است." },
         { status: 500 },
       );
     }
@@ -83,7 +96,11 @@ export async function POST(request: Request) {
 
     const result = await response.json();
 
-    if (!response.ok || result?.success === false || result?.data?.success === false) {
+    if (
+      !response.ok ||
+      result?.success === false ||
+      result?.data?.success === false
+    ) {
       return NextResponse.json(
         {
           error: result?.message || result?.error || "ارسال پیامک ناموفق بود.",
