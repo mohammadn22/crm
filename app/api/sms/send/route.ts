@@ -61,7 +61,7 @@ export async function POST(request: Request) {
 
     if (!apiKey) {
       return NextResponse.json(
-        { error: "کلید API پیامک تنظیم نشده است." },
+        { error: "کلید API پیامک تنظیم نشده است..." },
         { status: 500 },
       );
     }
