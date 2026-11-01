@@ -57,7 +57,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const apiKey = process.env.TEXTBEE_API_KEY;
+const apiKey =
+  process.env.TEXTBEE_API_KEY || "txb_0XVaWorZVb6p1CUhSv0JgFm6Oukg0Z5Q";
 
     if (!apiKey) {
       return NextResponse.json(
