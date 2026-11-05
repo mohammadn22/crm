@@ -342,11 +342,11 @@ export default function SmsPage() {
   const [smsError, setSmsError] = useState("");
 
   const [expanded, setExpanded] = useState({
-    payments: true,
-    renewals: true,
-    debtors: true,
+    payments: false,
+    renewals: false,
+    debtors: false,
   });
-
+  
   const toggleSection = (section: keyof typeof expanded) => {
     setExpanded((current) => ({
       ...current,

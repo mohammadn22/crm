@@ -325,6 +325,8 @@ type PolicyGroup = {
   clientIdNumber: string;
   mobile: string;
   address: string;
+  policyType: PolicyType | null;
+  rawPolicyType: string;
   schedule: ScheduleImportRow[];
   errors: string[];
 };
@@ -340,23 +342,25 @@ function downloadTemplate() {
     "تاریخ",
     "شماره همراه",
     "آدرس",
+    "نوع بیمه‌نامه",
   ];
 
   const rows = [
     [
-      "1234567",
-      "1403/01/01",
-      "1404/01/01",
+      "1405/124/34631/0",
+      "1405/01/01",
+      "1406/01/01",
       "علی رضایی",
       "0123456789",
       "",
       "",
       "09121234567",
       "تهران",
+      "شخص ثالث",
     ],
-    ["", "", "", "", "", "2000000", "1403/02/01", "", ""],
-    ["", "", "", "", "", "2000000", "1403/03/01", "", ""],
-    ["", "", "", "", "", "2000000", "1403/04/01", "", ""],
+    ["", "", "", "", "", "2000000", "1403/02/01", "", "", ""],
+    ["", "", "", "", "", "2000000", "1403/03/01", "", "", ""],
+    ["", "", "", "", "", "2000000", "1403/04/01", "", "", ""],
   ];
 
   const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
@@ -370,11 +374,26 @@ function downloadTemplate() {
     { wch: 18 },
     { wch: 18 },
     { wch: 30 },
+    { wch: 22 },
   ];
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "ورود بیمه‌نامه‌ها");
   XLSX.writeFile(workbook, "policies-import-template.xlsx");
+}
+
+function policyTypeKey(value: string) {
+  return value
+    .replace(/ي/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/[\u200c\u200e\u200f\s]/g, "");
+}
+
+function parsePolicyType(value: string): PolicyType | null {
+  const key = policyTypeKey(value);
+  if (!key) return null;
+  if (key === "ثالث") return "شخص ثالث";
+  return policyTypes.find((type) => policyTypeKey(type) === key) ?? null;
 }
 
 function groupRows(rows: unknown[][]): PolicyGroup[] {
@@ -405,6 +424,8 @@ function groupRows(rows: unknown[][]): PolicyGroup[] {
         clientIdNumber: digits(cell(row, 4)).trim(),
         mobile: digits(cell(row, 7)).trim(),
         address: cell(row, 8).trim(),
+        rawPolicyType: cell(row, 9).trim(),
+        policyType: parsePolicyType(cell(row, 9)),
         schedule: [],
         errors: [],
       };
@@ -451,6 +472,14 @@ function validateGroups(groups: PolicyGroup[]) {
     }
     if (!group.clientIdNumber) {
       group.errors.push("کد ملی بیمه‌گذار الزامی است.");
+    }
+    if (!group.rawPolicyType) {
+      group.errors.push("نوع بیمه‌نامه الزامی است.");
+    } else if (!group.policyType) {
+      group.errors.push(
+        `نوع بیمه‌نامه «${group.rawPolicyType}» معتبر نیست. ` +
+          `مقادیر مجاز: ${policyTypes.join("، ")}.`,
+      );
     }
     if (!group.startDateISO) {
       group.errors.push("تاریخ شروع نامعتبر است.");
@@ -1286,7 +1315,7 @@ if (!file) {
               .insert({
                 customer_id: customer.id,
                 policy_number: group.policyNumber,
-                policy_type: "شخص ثالث",
+                policy_type: group.policyType as PolicyType,
                 issue_date: group.startDateDisplay,
                 start_date: group.startDateDisplay,
                 end_date: group.endDateDisplay,

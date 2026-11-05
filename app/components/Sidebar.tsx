@@ -8,6 +8,8 @@ import Image from "next/image";
 type SidebarProps = {
   collapsed: boolean;
   onToggle: () => void;
+  mobileOpen: boolean;
+  onMobileClose: () => void;
 };
 
 const navigation = [
@@ -16,8 +18,8 @@ const navigation = [
   { label: "بیمه‌نامه‌ها", href: "/policies", icon: "policies" },
   { label: "حسابداری", href: "/accounting", icon: "accounting" },
   { label: "پیگیری", href: "/followup", icon: "followup" },
-  { label: "پرداخت آنلاین", href: "/onlinepayment", icon: "cloud" },
   { label: "ارسال پیامک", href: "/sms", icon: "sms" },
+  { label: "پرداخت آنلاین", href: "/onlinepayment", icon: "cloud" },
 ];
 
 function Icon({
@@ -27,6 +29,23 @@ function Icon({
   name: string;
   size?: number;
 }) {
+    if (name === "close") {
+    return (
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M18 6 6 18M6 6l12 12" />
+      </svg>
+    );
+  }
   if (name === "chevron") {
     return (
       <svg
@@ -60,13 +79,16 @@ function Icon({
 export default function Sidebar({
   collapsed,
   onToggle,
+  mobileOpen,
+  onMobileClose,
 }: SidebarProps) {
   const pathname = usePathname();
 
   return (
+    <>
     <aside
       dir="rtl"
-      className={`hidden min-h-screen shrink-0 flex-col border-l border-slate-100 bg-white transition-[width] duration-300 md:flex ${
+      className={`hidden min-h-screen shrink-0 flex-col border-l border-slate-100 bg-white transition-[width] duration-300 lg:flex ${
         collapsed ? "w-[88px]" : "w-[260px]"
       }`}
     >
@@ -151,6 +173,89 @@ export default function Sidebar({
           {!collapsed && <span>جمع کردن منو</span>}
         </button>
       </div>
-    </aside>
+        </aside>
+
+    {/* Mobile / tablet drawer (below the lg breakpoint) */}
+    <div
+      className={`fixed inset-0 z-50 lg:hidden print:hidden ${
+        mobileOpen ? "" : "pointer-events-none"
+      }`}
+      aria-hidden={!mobileOpen}
+    >
+      <div
+        onClick={onMobileClose}
+        className={`absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 ${
+          mobileOpen ? "opacity-100" : "opacity-0"
+        }`}
+      />
+
+      <aside
+        dir="rtl"
+        role="dialog"
+        aria-modal="true"
+        aria-label="منوی اصلی"
+        className={`absolute inset-y-0 right-0 flex w-[280px] max-w-[85vw] flex-col border-l border-slate-100 bg-white shadow-2xl transition-[transform,visibility] duration-300 ${
+          mobileOpen ? "visible translate-x-0" : "invisible translate-x-full"
+        }`}
+      >
+        <div className="flex h-[88px] shrink-0 items-center gap-3 border-b border-slate-100 px-6">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 text-xl font-black text-white shadow-lg shadow-indigo-200">
+            ب
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <h1 className="text-lg font-black text-slate-900">بیمه ۴۶</h1>
+            <p className="mt-1 text-xs text-slate-400">
+              مدیریت هوشمند دفتر بیمه
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onMobileClose}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-indigo-50 hover:text-indigo-600"
+            aria-label="بستن منو"
+          >
+            <Icon name="close" size={20} />
+          </button>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto px-3 py-7">
+          <p className="mb-4 px-3 text-[11px] font-bold tracking-wider text-slate-400">
+            منوی اصلی
+          </p>
+
+          <div className="space-y-2">
+            {navigation.map((item) => {
+              const active =
+                pathname === item.href ||
+                pathname.startsWith(`${item.href}/`);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onMobileClose}
+                  aria-current={active ? "page" : undefined}
+                  className={`relative flex min-h-[48px] items-center gap-3 rounded-2xl px-3.5 text-sm font-semibold transition-all ${
+                    active
+                      ? "bg-gradient-to-l from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-200/60"
+                      : "text-slate-500 hover:bg-indigo-50 hover:text-indigo-700"
+                  }`}
+                >
+                  <Icon name={item.icon} />
+                  <span>{item.label}</span>
+
+                  {active && (
+                    <span className="mr-auto h-1.5 w-1.5 rounded-full bg-amber-300" />
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
+      </aside>
+    </div>
+    </>
   );
 }
