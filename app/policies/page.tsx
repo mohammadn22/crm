@@ -1663,7 +1663,7 @@ if (!file) {
                       <td className="px-5 py-4 font-bold">
                         {policy.fullName}
                         <p className="mt-1 text-xs font-normal text-slate-400">
-                          {policy.nationalId}
+                          {policy.phone}
                         </p>
                       </td>
                      <td className="px-5 py-4" dir="ltr">
