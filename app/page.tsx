@@ -122,9 +122,9 @@ useEffect(() => {
                 ن
               </div>
               <div>
-                <p className="font-extrabold text-slate-800">نام سامانه</p>
+                <p className="font-extrabold text-slate-800">بیمه ۴۶</p>
                 <p className="text-xs text-slate-500">
-                  مدیریت آسان، تجربه بهتر
+                 سامانه آنلاین مدیریت دفتر بیمه
                 </p>
               </div>
             </div>
